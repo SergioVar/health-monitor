@@ -10,7 +10,7 @@ logging.basicConfig(
 
 
 def main():
-    
+    #List of services to monitor
     urls = [
         "https://www.google.com",
         "https://www.google.com/thispagedoesnotexist",
