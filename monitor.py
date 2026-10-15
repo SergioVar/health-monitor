@@ -1,4 +1,4 @@
-
+import requests
 import json
 from checker import check_service
 import logging
@@ -10,18 +10,39 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s"
 )
 
-def send_alert(result, previous):
-    print("=" * 40)
-    print(f"! STATE CHANGE: {result['url']}")
-    print(f"   {previous} → {result['status']}")
-    print(f"   at {result['timestamp']}")
-    print("=" * 40)
-
 def load_config():
-    with open("config.json", "r") as f:
+    with open("config.json", "r", encoding="utf-8") as f:
         return json.load(f)
 
-def main(last_status, urls):
+
+def local_secrets():
+    with open("secrets.json", "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def send_alert(result, previous, webhook_url):
+    current = result["status"]
+    
+    if current == "UP":
+        emoji = "✓"
+        headline = "RECOVERED"
+    else:
+        emoji = "!"
+        headline = "PROBLEM"
+    
+    text = (
+        f"{emoji} *{headline}*: {result['url']}\n"
+        f"{previous} → {current} at {result['timestamp']}"
+    )
+    
+    logging.info(f"Sending alert: {result['url']} {previous} → {current}")
+
+    try:
+        requests.post(webhook_url, json={"text": text}, timeout=5)
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Failed to send Slack alert: {e}")
+
+def main(last_status, urls, webhook_url):
 
     results = []
 
@@ -44,7 +65,7 @@ def main(last_status, urls):
         current = result["status"]
         
         if previous is not None and current != previous:
-            send_alert(result, previous)
+            send_alert(result, previous, webhook_url)
         
         last_status[url] = current
 
@@ -54,16 +75,15 @@ def main(last_status, urls):
 
 
 if __name__ == "__main__":
-    
     config = load_config()
-    
+    secrets = local_secrets()
+    webhook_url = secrets["slack_webhook_url"]
     interval = config["interval_seconds"]
-    
     last_status = {}
     
     try:
         while True:
-            main(last_status, config["urls"])
+            main(last_status, config["urls"], webhook_url)
             time.sleep(interval)
             
     except KeyboardInterrupt:
