@@ -17,14 +17,11 @@ def send_alert(result, previous):
     print(f"   at {result['timestamp']}")
     print("=" * 40)
 
+def load_config():
+    with open("config.json", "r") as f:
+        return json.load(f)
 
-def main(last_status):
-    #List of services to monitor
-    urls = [
-        "https://www.google.com",
-        "https://www.google.com/thispagedoesnotexist",
-        "https://thisisnotarealwebsite12345.com",
-    ]
+def main(last_status, urls):
 
     results = []
 
@@ -57,10 +54,17 @@ def main(last_status):
 
 
 if __name__ == "__main__":
+    
+    config = load_config()
+    
+    interval = config["interval_seconds"]
+    
     last_status = {}
+    
     try:
         while True:
-            main(last_status)
-            time.sleep(5)
+            main(last_status, config["urls"])
+            time.sleep(interval)
+            
     except KeyboardInterrupt:
         logging.info("Monitor stopped by the user.")
