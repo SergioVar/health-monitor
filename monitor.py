@@ -11,13 +11,27 @@ logging.basicConfig(
 )
 
 def load_config():
-    with open("config.json", "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open("config.json", "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logging.error("config.json not found. Please create it before running the monitor.")
+        raise
+    except json.JSONDecodeError as e:
+        logging.error(f"config.json has a formatting error: {e}")
+        raise
 
 
 def local_secrets():
-    with open("secrets.json", "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open("secrets.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logging.error("secrets.json not found. Please create it before running the monitor.")
+        raise
+    except json.JSONDecodeError as e:
+        logging.error(f"secrets.json has a formatting error: {e}")
+        raise
 
 
 def send_alert(result, previous, webhook_url):
